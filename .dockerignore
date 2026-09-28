@@ -1,0 +1,8 @@
+.git
+tests
+docs
+evidence
+node_modules
+*.md
+!THIRD_PARTY_NOTICES.md
+.railway

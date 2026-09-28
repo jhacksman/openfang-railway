@@ -1,0 +1,20 @@
+{
+  "name": "openfang-railway",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Readiness gate and supervisor for running a pinned OpenFang release on Railway",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node gate/server.js",
+    "lint": "for f in gate/*.js tests/*.js; do node --check \"$f\" || exit 1; done",
+    "test": "node --test tests/gate.test.js",
+    "test:integration": "OPENFANG_BIN=${OPENFANG_BIN:-openfang} node --test tests/integration.test.js"
+  },
+  "devDependencies": {
+    "railway": "3.11.0"
+  }
+}
