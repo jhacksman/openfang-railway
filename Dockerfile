@@ -36,7 +36,6 @@ ENV OPENFANG_HOME=/data \
     NODE_ENV=production \
     PORT=8080
 
-VOLUME ["/data"]
 EXPOSE 8080
 
 ENTRYPOINT ["/usr/bin/tini", "--", "/app/entrypoint.sh"]
