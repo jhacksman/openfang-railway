@@ -1,0 +1,58 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  OPENFANG_VERSION: "0.6.9"
+  OPENFANG_SHA256: "4309b0bcf2adc5dac45776e2008087a8ad072933f1ae698ff8d4e06fb6b87602"
+
+jobs:
+  gate:
+    name: lint + behaviour tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm run lint
+      - run: shellcheck entrypoint.sh tests/image.sh
+      - run: npm test
+
+  integration:
+    name: real openfang binary
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: download pinned openfang release
+        run: |
+          set -eu
+          curl -fsSL -o openfang.tar.gz \
+            "https://github.com/RightNow-AI/openfang/releases/download/v${OPENFANG_VERSION}/openfang-x86_64-unknown-linux-gnu.tar.gz"
+          echo "${OPENFANG_SHA256}  openfang.tar.gz" | sha256sum -c -
+          mkdir -p "$HOME/bin"
+          tar -xzf openfang.tar.gz -C "$HOME/bin" openfang
+          "$HOME/bin/openfang" --version
+      - run: OPENFANG_BIN="$HOME/bin/openfang" npm run test:integration
+
+  image:
+    name: docker image
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: build
+        run: docker build --build-arg "TEMPLATE_VERSION=${GITHUB_SHA::12}" -t openfang-railway:test .
+      - name: container-level tests
+        run: tests/image.sh openfang-railway:test
