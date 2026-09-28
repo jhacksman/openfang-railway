@@ -65,7 +65,8 @@ docker exec "$NAME" sh -c 'stat -c "%U:%G %a %n" /data /data/config.toml'
 [ "$(docker exec "$NAME" stat -c %U /data/config.toml)" = "openfang" ] || fail "config.toml not owned by openfang"
 echo "$procs" | grep -q '^openfang .*openfang start' || fail "openfang not running as openfang"
 echo "$procs" | grep -q '^openfang node /app/gate/server.js' || fail "gate not running as openfang"
-echo "$procs" | grep '^root' | grep -v 'tini' | grep -qv 'sh -c for p in /proc' && fail "unexpected root process"
+root_procs="$(echo "$procs" | grep '^root' | grep -v 'tini' | grep -v 'sh -c for p in /proc' || true)"
+[ -z "$root_procs" ] || fail "unexpected root process: $root_procs"
 
 say "auth is enforced end to end"
 [ "$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:${PORT}/api/health")" = "401" ] || fail "unauthenticated /api/health not 401"
@@ -88,7 +89,8 @@ echo "stop took $(( (end - start) / 1000000 )) ms"
 exit_code="$(docker inspect "$NAME" --format '{{.State.ExitCode}}')"
 echo "container exit code: $exit_code"
 [ "$exit_code" = "0" ] || [ "$exit_code" = "143" ] || fail "unexpected exit code $exit_code"
-docker logs "$NAME" 2>&1 | grep -q "stopping openfang (SIGTERM)" || fail "gate did not forward SIGTERM to openfang"
+stop_logs="$(docker logs "$NAME" 2>&1)"
+echo "$stop_logs" | grep -q "stopping openfang (SIGTERM)" || fail "gate did not forward SIGTERM to openfang"
 docker rm "$NAME" >/dev/null
 
 run_container -e OPENFANG_DEFAULT_PROVIDER=anthropic -e OPENFANG_DEFAULT_MODEL=claude-sonnet-4-20250514
@@ -97,12 +99,13 @@ cfg="$(curl -s -H "Authorization: Bearer $API_KEY" "http://127.0.0.1:${PORT}/api
 echo "$cfg"
 echo "$cfg" | grep -q '"model":"gpt-4o-mini"' || fail "model change lost on recreate"
 echo "$cfg" | grep -q '"provider":"openai"' || fail "provider change lost on recreate"
-docker logs "$NAME" 2>&1 | grep -q "existing /data/config.toml" && fail "second boot re-adopted config (state.json lost?)"
-docker logs "$NAME" 2>&1 | grep -q "seeded /data/config.toml" && fail "second boot re-seeded config"
+boot2_logs="$(docker logs "$NAME" 2>&1)"
+echo "$boot2_logs" | grep -q "existing /data/config.toml" && fail "second boot re-adopted config (state.json lost?)"
+echo "$boot2_logs" | grep -q "seeded /data/config.toml" && fail "second boot re-seeded config"
 
 say "secrets are not in logs"
-docker logs "$NAME" 2>&1 | grep -q "$API_KEY" && fail "API key in logs"
-docker logs "$NAME" 2>&1 | grep -q "$PASSWORD" && fail "admin password in logs"
+printf '%s\n%s\n' "$stop_logs" "$boot2_logs" | grep -q "$API_KEY" && fail "API key in logs"
+printf '%s\n%s\n' "$stop_logs" "$boot2_logs" | grep -q "$PASSWORD" && fail "admin password in logs"
 
 say "resource footprint (idle)"
 docker stats --no-stream --format 'cpu={{.CPUPerc}} mem={{.MemUsage}}' "$NAME"
