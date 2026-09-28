@@ -100,7 +100,7 @@ Any other variable you set on the service is passed through to the OpenFang daem
 1. Deploy the service and make sure a volume is mounted at `/data`.
 2. Set `ADMIN_PASSWORD`, `OPENFANG_API_KEY` and a provider key.
 3. Wait for the deployment to become healthy. Railway waits for `/_gate/healthz` to return `200`
-   (up to 300 s, see `railway.json`); OpenFang typically boots in a few seconds.
+   (up to 300 s, the template's healthcheck timeout); OpenFang typically boots in a few seconds.
 4. Open `https://<your-service>.up.railway.app/` — you are redirected to `/_gate/login`. Sign in
    with `ADMIN_PASSWORD`; you land in the native OpenFang dashboard.
 5. Finish provider/model/channel/agent setup in OpenFang. Those changes are written to
@@ -224,10 +224,26 @@ migrations in [CHANGELOG.md](CHANGELOG.md).
 
 ## Deploy without the template
 
+Either by hand:
+
 1. Create a new Railway service from this GitHub repository (Railway detects the `Dockerfile`).
 2. Add a volume, mount path `/data`.
 3. Add the variables from [Required variables](#required-variables).
-4. Railway reads the healthcheck path and restart policy from `railway.json`.
+4. In service settings set the healthcheck path to `/_gate/healthz` (timeout 300 s) and the
+   restart policy to *on failure*.
+
+Or with Railway Infrastructure as Code, which does all of the above and generates the two
+secrets (`.railway/railway.ts`):
+
+```sh
+npm install            # installs the `railway` IaC SDK used by the config file
+railway login && railway init --name openfang
+railway config plan    # review
+railway config apply   # create service, volume, variables, healthcheck
+```
+
+`railway.json` config-as-code is deprecated by Railway and is no longer read for new services,
+so this repository does not ship one.
 
 ## Local development and tests
 

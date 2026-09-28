@@ -4,7 +4,7 @@ FROM node:22-bookworm-slim@sha256:43ac6c60b8f89723f746e8a92ce91abd5017e627ce1ddf
 
 ARG OPENFANG_VERSION=0.6.9
 ARG OPENFANG_SHA256=4309b0bcf2adc5dac45776e2008087a8ad072933f1ae698ff8d4e06fb6b87602
-ARG TEMPLATE_VERSION=dev
+ARG TEMPLATE_VERSION=1.0.0
 
 # Same runtime dependencies as upstream's Dockerfile (python + node for skills
 # and MCP servers) plus ca-certificates, tini (PID 1) and gosu (drop root).

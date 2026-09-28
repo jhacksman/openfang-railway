@@ -27,6 +27,9 @@ First release.
   logs and status output are redacted.
 - Admin pages: `/_gate/status` and `/_gate/config` (validated, backed-up, atomic replace).
 - Runs as unprivileged `openfang` (uid 10001) under `tini`.
+- Railway Infrastructure as Code (`.railway/railway.ts`): service, `/data` volume, healthcheck,
+  restart policy and generated `ADMIN_PASSWORD` / `OPENFANG_API_KEY`. Railway's `railway.json`
+  config-as-code is deprecated and not shipped.
 - Tests: behaviour suite against a fake daemon, integration suite against the real binary,
   container-level suite against the built image; all wired into GitHub Actions.
 

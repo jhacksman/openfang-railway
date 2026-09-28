@@ -13,5 +13,8 @@
     "lint": "for f in gate/*.js tests/*.js; do node --check \"$f\" || exit 1; done",
     "test": "node --test tests/gate.test.js",
     "test:integration": "OPENFANG_BIN=${OPENFANG_BIN:-openfang} node --test tests/integration.test.js"
+  },
+  "devDependencies": {
+    "railway": "3.11.0"
   }
 }
